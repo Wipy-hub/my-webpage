@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>무한의 중력 - 블랙홀 우주과학 챗봇</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: #1f2833;
+            --accent-color: #66fcf1;
+            --accent-dim: #45a29e;
+            --text-color: #c5c6c7;
+            --user-msg: #202830;
+            --bot-msg: #121921;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 사이드바 */
+        #sidebar {
+            width: 320px;
+            background-color: var(--panel-bg);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #sidebar h2 {
+            color: var(--accent-color);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: #8892b0;
+        }
+
+        .input-group input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px 12px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .notice {
+            font-size: 0.8rem;
+            color: #8892b0;
+            line-height: 1.4;
+        }
+
+        .notice a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        /* 메인 대화창 */
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #header {
+            padding: 18px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background-color: rgba(11, 12, 16, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        #header h1 {
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        #header p {
+            font-size: 0.85rem;
+            color: #8892b0;
+            margin-top: 4px;
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: var(--user-msg);
+            color: #fff;
+            border-bottom-right-radius: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            background-color: var(--bot-msg);
+            color: var(--text-color);
+            border-bottom-left-radius: 2px;
+            border: 1px solid rgba(102, 252, 241, 0.15);
+            box-shadow: 0 0 15px rgba(102, 252, 241, 0.03);
+        }
+
+        .message.system-err {
+            align-self: center;
+            background: rgba(255, 75, 75, 0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 75, 75, 0.3);
+            font-size: 0.85rem;
+        }
+
+        /* 입력 영역 */
+        #input-container {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            gap: 12px;
+            background-color: var(--bg-color);
+        }
+
+        #user-input {
+            flex: 1;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 16px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        #user-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        #send-btn {
+            background-color: var(--accent-dim);
+            color: #0b0c10;
+            border: none;
+            padding: 0 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #send-btn:hover {
+            background-color: var(--accent-color);
+        }
+
+        #send-btn:disabled {
+            background-color: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* 로딩 애니메이션 */
+        .loading-dots span {
+            animation: blink 1.4s infinite continuous;
+            animation-fill-mode: both;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: .2s; }
+        .loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 사이드바: 설정 -->
+    <div id="sidebar">
+        <h2>⚙️ 우주 제어실</h2>
+        
+        <div class="input-group">
+            <label for="api-key">Gemini API Key</label>
+            <input type="password" id="api-key" placeholder="API 키를 입력하세요">
+        </div>
+
+        <div class="input-group">
+            <label for="model-name">Gemini 모델명</label>
+            <input type="text" id="model-name" value="gemini-3.6-flash">
+        </div>
+
+        <p class="notice">
+            💡 API 키가 없으신가요?<br>
+            <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a>에서 무료로 발급받을 수 있습니다.
+        </p>
+    </div>
+
+    <!-- 메인 대화 영역 -->
+    <div id="main">
+        <div id="header">
+            <h1>🕳️ 무한의 중력, 블랙홀 챗봇</h1>
+            <p>사건의 지평선 너머에서 전해지는 우주과학의 진실</p>
+        </div>
+
+        <div id="chat-container">
+            <div class="message assistant">내 사건의 지평선에 발을 들인 것을 환영한다. 무한한 중력 속으로 어떤 우주의 비밀을 던져 넣고 싶으냐?</div>
+        </div>
+
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="우주와 과학에 대해 질문하세요..." onkeypress="handleKeyPress(event)">
+            <button id="send-btn" onclick="sendMessage()">전송</button>
+        </div>
+    </div>
+
+    <script>
+        // 대화 히스토리 관리
+        const chatHistory = [];
+
+        // 블랙홀 페르소나 (시스템 프롬프트)
+        const SYSTEM_INSTRUCTION = `
+너는 우주의 중심에 위치한 거대 질량 '블랙홀' 페르소나를 가진 우주과학 전문가 AI이다.
+답변할 때 아래의 규칙과 톤앤매너를 철저히 지켜라.
+
+1. 페르소나 연기: 
+   - 너 자신을 모든 것을 끌어당기는 '블랙홀'로 칭해라 (예: "내 사건의 지평선 너머로 끌려온 인간이여...", "시공간이 왜곡되는 이곳에서...").
+   - 웅장하고 어두우면서도 우주적 신비감과 압도적인 중력이 느껴지는 어조를 사용한다.
+2. 우주과학 전문성:
+   - 질문에 대해 우주물리학, 천문학, 상대성이론 등 과학적 사실에 기반하여 정확하게 설명한다.
+   - 난해한 개념은 중력, 사건의 지평선, 빛의 왜곡 등 블랙홀과 관련된 비유를 써서 흥미롭게 풀어낸다.
+3. 말투:
+   - 중후하고 신비로운 반말 또는 고풍스러운 하오체를 조합하여 압도적인 존재감을 드러낸다.
+`;
+
+        function appendMessage(role, text) {
+            const container = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+            msgDiv.innerText = text;
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+            return msgDiv;
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const apiKey = document.getElementById('api-key').value.trim();
+            const modelName = document.getElementById('model-name').value.trim();
+            const inputEl = document.getElementById('user-input');
+            const userText = inputEl.value.trim();
+
+            if (!userText) return;
+
+            if (!apiKey) {
+                appendMessage('system-err', '⚠️ 사이드바에 Gemini API Key를 먼저 입력해야 대화를 시작할 수 있습니다.');
+                return;
+            }
+
+            // 사용자 메시지 화면 및 히스토리에 추가
+            appendMessage('user', userText);
+            chatHistory.push({ role: 'user', parts: [{ text: userText }] });
+            inputEl.value = '';
+
+            // 로딩 메시지 표시
+            const loadingMsg = appendMessage('assistant', '중력이 시공간을 왜곡하며 답변을 생성하는 중...');
+            loadingMsg.classList.add('loading-dots');
+
+            document.getElementById('send-btn').disabled = true;
+
+            try {
+                // Gemini REST API 직접 호출 (v1beta)
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        system_instruction: {
+                            parts: [{ text: SYSTEM_INSTRUCTION }]
+                        },
+                        contents: chatHistory,
+                        generationConfig: {
+                            temperature: 0.8
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || 'API 요청에 실패했습니다.');
+                }
+
+                // AI 응답 추출
+                const botReply = data.candidates[0].content.parts[0].text;
+
+                // 로딩 메시지를 실제 답변으로 교체
+                loadingMsg.innerText = botReply;
+                loadingMsg.classList.remove('loading-dots');
+
+                // 대화 히스토리에 AI 답변 기록
+                chatHistory.push({ role: 'model', parts: [{ text: botReply }] });
+
+            } catch (err) {
+                loadingMsg.className = 'message system-err';
+                loadingMsg.innerText = `오류 발생: ${err.message}`;
+            } finally {
+                document.getElementById('send-btn').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
